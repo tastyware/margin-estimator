@@ -35,7 +35,7 @@ wheels = [
 [[package]]
 name = "margin-estimator"
 version = "0.1"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
 ]

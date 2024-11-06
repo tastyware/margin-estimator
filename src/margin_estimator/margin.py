@@ -22,6 +22,15 @@ def calculate_margin(legs: list[Option], underlying: Underlying) -> MarginRequir
         return _calculate_margin_short_option(legs[0], underlying)
     if len(legs) == 2 and legs[0].quantity < 0 and legs[1].quantity < 0:
         return _calculate_margin_short_strangle(legs, underlying)
+    if len(legs) == 2 and legs[0].expiration != legs[1].expiration:
+        short = legs[0] if legs[0].quantity < 0 else legs[1]
+        long = legs[1] if legs[1] != short else legs[0]
+        if short.expiration > long.expiration:
+            margin = _calculate_margin_short_option(short, underlying)
+            print("short", margin)
+            long_margin = _calculate_margin_long_option(long)
+            print("long", long_margin)
+            return margin + long_margin
     calls = [leg for leg in legs if leg.type == OptionType.CALL]
     puts = [leg for leg in legs if leg.type == OptionType.PUT]
     extra_puts = sum(c.quantity for c in calls)
@@ -63,9 +72,9 @@ def _calculate_margin_short_option(
     Source: CBOE Margin Manual
     """
     if option.type == OptionType.PUT:
-        otm_distance = min(ZERO, underlying.price - option.strike)
+        otm_distance = max(ZERO, underlying.price - option.strike)
     else:
-        otm_distance = min(ZERO, option.strike - underlying.price)
+        otm_distance = max(ZERO, option.strike - underlying.price)
     # broad-based ETFs/indices
     if underlying.etf_type == ETFType.BROAD:
         if option.type == OptionType.PUT:
@@ -81,7 +90,7 @@ def _calculate_margin_short_option(
             # 100% of option proceeds plus 15% of underlying index value less
             # out-of-the money amount, if any, to a minimum for puts of option
             # proceeds plus 10% of the put’s exercise price.
-            margin_requirement = min(minimum, base)
+            margin_requirement = max(minimum, base)
             # Deposit cash or cash equivalents equal to aggregate exercise price
             cash_requirement = (option.strike - option.price) * 100
         else:  # OptionType.CALL
@@ -97,7 +106,7 @@ def _calculate_margin_short_option(
             # 100% of option proceeds plus 15% of underlying index value less
             # out-of-the money amount, if any, to a minimum for calls of option
             # proceeds plus 10% of the underlying index value.
-            margin_requirement = min(minimum, base)
+            margin_requirement = max(minimum, base)
             # Deposit cash or cash equivalents equal to aggregate exercise price
             cash_requirement = (option.strike - option.price) * 100
     # narrow-based ETFs/indices, volatility indices, equities
@@ -115,16 +124,23 @@ def _calculate_margin_short_option(
             # 100% of option proceeds plus 20% of underlying security / index value
             # less out-of-the-money amount, if any, to a minimum for puts of option
             # proceeds plus 10% of the put’s exercise price.
-            margin_requirement = min(minimum, base)
+            margin_requirement = max(minimum, base)
             # Deposit cash or cash equivalents equal to aggregate exercise price.
             cash_requirement = (option.strike - option.price) * 100
         else:  # OptionType.CALL
-            minimum = round(option.price + underlying.price / 10, 2)
-            base = round(option.price + underlying.price / 5 - otm_distance, 2)
+            minimum = round(
+                option.price + underlying.price / 10 * underlying.leverage_factor, 2
+            )
+            base = round(
+                option.price
+                + underlying.price / 5 * underlying.leverage_factor
+                - otm_distance,
+                2,
+            )
             # 100% of option proceeds plus 20% of underlying security / index value
             # less out-of-the-money amount, if any, to a minimum for puts of option
             # proceeds plus 10% of the underlying security/index value.
-            margin_requirement = min(minimum, base)
+            margin_requirement = max(minimum, base)
             # Deposit underlying security.
             cash_requirement = (underlying.price - option.price) * 100
     margin_requirement *= 100 * abs(option.quantity)
@@ -174,7 +190,7 @@ def _get_net_credit_or_debit(legs: list[Option]) -> Decimal:
     """
     total = ZERO
     for leg in legs:
-        total -= leg.quantity * leg.price * 100
+        total += leg.quantity * leg.price * 100
     return total
 
 
@@ -189,7 +205,7 @@ def _calculate_margin_spread(legs: list[Option]) -> MarginRequirements:
     for strike in strikes:
         points = [_calculate_loss_for(leg, strike) for leg in legs]
         losses.append(sum(points))  # type: ignore
-    margin_requirement = min(losses) + pnl
+    margin_requirement = abs(min(losses)) + pnl
 
     return MarginRequirements(
         # deposit and maintain cash or cash equivalents equal to the spread’s maximum
