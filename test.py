@@ -375,3 +375,291 @@ def test_call_calendar_spread():
     margin = calculate_margin([long, short], underlying)
     assert margin.cash_requirement == Decimal(7200)
     assert margin.margin_requirement == Decimal(2800)
+
+
+def test_call_calendar_spread_broad():
+    underlying = Underlying(price=433.35, etf_type=ETFType.BROAD)
+    long = Option(
+        expiration=date.today(),
+        price=13.1,
+        quantity=1,
+        strike=425,
+        type=OptionType.CALL,
+    )
+    short = Option(
+        expiration=date.today() + timedelta(days=30),
+        price=12.2,
+        quantity=-1,
+        strike=430,
+        type=OptionType.CALL,
+    )
+    margin = calculate_margin([long, short], underlying)
+    assert margin.cash_requirement == Decimal(43090)
+    assert margin.margin_requirement == Decimal(9030)
+
+
+def test_straddle():
+    underlying = Underlying(price=92.63)
+    call = Option(
+        expiration=date.today(),
+        price=7,
+        quantity=-1,
+        strike=90,
+        type=OptionType.CALL,
+    )
+    put = Option(
+        expiration=date.today(),
+        price=3.7,
+        quantity=-1,
+        strike=90,
+        type=OptionType.PUT,
+    )
+    margin = calculate_margin([put, call], underlying)
+    assert margin.cash_requirement == Decimal(17193)
+    assert margin.margin_requirement == Decimal(2923)
+
+
+def test_straddle_broad():
+    underlying = Underlying(price=433.35, etf_type=ETFType.BROAD)
+    call = Option(
+        expiration=date.today(),
+        price=5.5,
+        quantity=-1,
+        strike=435,
+        type=OptionType.CALL,
+    )
+    put = Option(
+        expiration=date.today(),
+        price=7.2,
+        quantity=-1,
+        strike=435,
+        type=OptionType.PUT,
+    )
+    margin = calculate_margin([put, call], underlying)
+    assert margin.cash_requirement == Decimal(85730)
+    assert margin.margin_requirement == Decimal(7770)
+
+
+def test_straddle_broad_2():
+    underlying = Underlying(price=43.34, etf_type=ETFType.BROAD)
+    call = Option(
+        expiration=date.today(),
+        price=1.35,
+        quantity=-1,
+        strike=45,
+        type=OptionType.CALL,
+    )
+    put = Option(
+        expiration=date.today(),
+        price=2.85,
+        quantity=-1,
+        strike=45,
+        type=OptionType.PUT,
+    )
+    margin = calculate_margin([put, call], underlying)
+    assert margin.cash_requirement == Decimal(8580)
+    assert margin.margin_requirement == Decimal(1070)
+
+
+def test_long_put_butterfly():
+    underlying = Underlying(price=550)
+    below = Option(
+        expiration=date.today(),
+        price=5.6,
+        quantity=1,
+        strike=540,
+        type=OptionType.PUT,
+    )
+    short = Option(
+        expiration=date.today(),
+        price=7.2,
+        quantity=-2,
+        strike=550,
+        type=OptionType.PUT,
+    )
+    above = Option(
+        expiration=date.today(),
+        price=9.8,
+        quantity=1,
+        strike=555,
+        type=OptionType.PUT,
+    )
+    margin = calculate_margin([below, short, above], underlying)
+    assert margin.cash_requirement == Decimal(600)
+    assert margin.margin_requirement == Decimal(600)
+
+
+def test_long_call_butterfly():
+    underlying = Underlying(price=550)
+    below = Option(
+        expiration=date.today(),
+        price=12.4,
+        quantity=1,
+        strike=545,
+        type=OptionType.CALL,
+    )
+    short = Option(
+        expiration=date.today(),
+        price=8.8,
+        quantity=-2,
+        strike=550,
+        type=OptionType.CALL,
+    )
+    above = Option(
+        expiration=date.today(),
+        price=2,
+        quantity=1,
+        strike=565,
+        type=OptionType.CALL,
+    )
+    margin = calculate_margin([below, short, above], underlying)
+    assert margin.cash_requirement == Decimal(680)
+    assert margin.margin_requirement == Decimal(680)
+
+
+def test_long_put_condor():
+    underlying = Underlying(price=1160)
+    long_below = Option(
+        expiration=date.today(),
+        price=47.1,
+        quantity=1,
+        strike=1050,
+        type=OptionType.PUT,
+    )
+    short_below = Option(
+        expiration=date.today(),
+        price=55.7,
+        quantity=-1,
+        strike=1075,
+        type=OptionType.PUT,
+    )
+    short_above = Option(
+        expiration=date.today(),
+        price=66.3,
+        quantity=-1,
+        strike=1100,
+        type=OptionType.PUT,
+    )
+    long_above = Option(
+        expiration=date.today(),
+        price=85.4,
+        quantity=1,
+        strike=1125,
+        type=OptionType.PUT,
+    )
+    margin = calculate_margin(
+        [long_below, short_below, long_above, short_above], underlying
+    )
+    assert margin.cash_requirement == Decimal(1050)
+    assert margin.margin_requirement == Decimal(1050)
+
+
+def test_long_call_condor():
+    underlying = Underlying(price=26.75)
+    long_below = Option(
+        expiration=date.today(),
+        price=0.45,
+        quantity=1,
+        strike=22.5,
+        type=OptionType.CALL,
+    )
+    short_below = Option(
+        expiration=date.today(),
+        price=0.75,
+        quantity=-1,
+        strike=25,
+        type=OptionType.CALL,
+    )
+    short_above = Option(
+        expiration=date.today(),
+        price=2.75,
+        quantity=-1,
+        strike=30,
+        type=OptionType.CALL,
+    )
+    long_above = Option(
+        expiration=date.today(),
+        price=4.3,
+        quantity=1,
+        strike=32.5,
+        type=OptionType.CALL,
+    )
+    margin = calculate_margin(
+        [long_below, short_below, long_above, short_above], underlying
+    )
+    assert margin.cash_requirement == Decimal(125)
+    assert margin.margin_requirement == Decimal(125)
+
+
+def test_iron_butterfly():
+    underlying = Underlying(price=26.75)
+    long_below = Option(
+        expiration=date.today(),
+        price=0.1,
+        quantity=1,
+        strike=16,
+        type=OptionType.PUT,
+    )
+    short_below = Option(
+        expiration=date.today(),
+        price=0.2,
+        quantity=-1,
+        strike=20,
+        type=OptionType.PUT,
+    )
+    short_above = Option(
+        expiration=date.today(),
+        price=7,
+        quantity=-1,
+        strike=20,
+        type=OptionType.CALL,
+    )
+    long_above = Option(
+        expiration=date.today(),
+        price=4,
+        quantity=1,
+        strike=24,
+        type=OptionType.CALL,
+    )
+    margin = calculate_margin(
+        [long_below, short_below, long_above, short_above], underlying
+    )
+    assert margin.cash_requirement == Decimal(90)
+    assert margin.margin_requirement == Decimal(90)
+
+
+def test_iron_condor():
+    underlying = Underlying(price=1060)
+    long_below = Option(
+        expiration=date.today(),
+        price=32,
+        quantity=1,
+        strike=1000,
+        type=OptionType.PUT,
+    )
+    short_below = Option(
+        expiration=date.today(),
+        price=35.1,
+        quantity=-1,
+        strike=1025,
+        type=OptionType.PUT,
+    )
+    short_above = Option(
+        expiration=date.today(),
+        price=9.4,
+        quantity=-1,
+        strike=1150,
+        type=OptionType.CALL,
+    )
+    long_above = Option(
+        expiration=date.today(),
+        price=6.3,
+        quantity=1,
+        strike=1175,
+        type=OptionType.CALL,
+    )
+    margin = calculate_margin(
+        [long_below, short_below, long_above, short_above], underlying
+    )
+    assert margin.cash_requirement == Decimal(1880)
+    assert margin.margin_requirement == Decimal(1880)

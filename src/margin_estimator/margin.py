@@ -27,10 +27,7 @@ def calculate_margin(legs: list[Option], underlying: Underlying) -> MarginRequir
         long = legs[1] if legs[1] != short else legs[0]
         if short.expiration > long.expiration:
             margin = _calculate_margin_short_option(short, underlying)
-            print("short", margin)
-            long_margin = _calculate_margin_long_option(long)
-            print("long", long_margin)
-            return margin + long_margin
+            return margin + _calculate_margin_long_option(long)
     calls = [leg for leg in legs if leg.type == OptionType.CALL]
     puts = [leg for leg in legs if leg.type == OptionType.PUT]
     extra_puts = sum(c.quantity for c in calls)
@@ -163,10 +160,10 @@ def _calculate_margin_short_strangle(
     # For the same underlying security, short put or short call requirement whichever
     # is greater, plus the option proceeds of the other side.
     if margin1.margin_requirement > margin2.margin_requirement:
-        margin_requirement = margin1.margin_requirement + legs[1].price
+        margin_requirement = margin1.margin_requirement + legs[1].price * 100
     else:
-        margin_requirement = margin2.margin_requirement + legs[0].price
-    margin_requirement *= 100 * abs(legs[0].quantity)
+        margin_requirement = margin2.margin_requirement + legs[0].price * 100
+    margin_requirement *= abs(legs[0].quantity)
     return MarginRequirements(
         cash_requirement=margin1.cash_requirement + margin2.cash_requirement,
         margin_requirement=margin_requirement,
