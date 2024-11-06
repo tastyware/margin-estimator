@@ -3,10 +3,8 @@ Calculate estimated margin requirements for equities, options, futures, and futu
 
 > [!NOTE]
 > Not all features are available yet, pending further development.
-> Supported instruments: equity/ETF/index options
-> Missing instruments: equities/ETFs, futures, futures options
-> Supported trade types: single options, strangles, verticals, condors, butterflies
-> Missing trade types: ratio spreads, box spreads, jade lizards.
+> Currently, equity/ETF/index options are supported, for any trade
+> type other than ratio spreads, box spreads, and jaze lizards.
 > Contributions welcome!
 
 ## Installation
@@ -68,7 +66,9 @@ margin = calculate_margin(
 print(margin)
 ```
 
+```python
 >>> cash_requirement=Decimal('262.00') margin_requirement=Decimal('262.00')
+```
 
 For normal equities you can omit the `etf_type` parameter:
 
@@ -87,7 +87,9 @@ margin = calculate_margin([put], underlying)
 print(margin)
 ```
 
+```python
 >>> cash_requirement=Decimal('1055.00') margin_requirement=Decimal('263.00')
+```
 
 And for leveraged products, you'll need to pass in the `leverage_factor`:
 
@@ -110,6 +112,8 @@ margin = calculate_margin([call], underlying)
 print(margin)
 ```
 
+```python
 >>> cash_requirement=Decimal('7555.00') margin_requirement=Decimal('3661.00')
+```
 
 Please note that all numbers are baseline estimates based on CBOE/CME guidelines and individual broker margins will likely vary significantly.
