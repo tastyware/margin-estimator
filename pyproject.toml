@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "margin-estimator"
-version = "0.1"
-description = "Calculate estimated margin requirements for equities, options, futures, and futures options. Based on CBOE and CME margining."
+version = "0.2"
+description = "Calculate estimated margin requirements for equities options, based on CBOE margining."
 readme = "README.md"
 requires-python = ">=3.11"
 license = {file = "LICENSE"}

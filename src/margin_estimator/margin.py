@@ -1,3 +1,4 @@
+from collections import deque
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -13,31 +14,76 @@ ZERO = Decimal(0)
 
 
 def calculate_margin(legs: list[Option], underlying: Underlying) -> MarginRequirements:
-    """
-    Calculate margin for an arbitrary order according to CBOE's Margin Manual.
-    """
-    if len(legs) == 1:
-        if legs[0].quantity > 0:
-            return _calculate_margin_long_option(legs[0])
-        return _calculate_margin_short_option(legs[0], underlying)
-    if len(legs) == 2 and legs[0].quantity < 0 and legs[1].quantity < 0:
-        return _calculate_margin_short_strangle(legs, underlying)
-    if len(legs) == 2 and legs[0].expiration != legs[1].expiration:
-        short = legs[0] if legs[0].quantity < 0 else legs[1]
-        long = legs[1] if legs[1] != short else legs[0]
-        if short.expiration > long.expiration:
-            margin = _calculate_margin_short_option(short, underlying)
-            return margin + _calculate_margin_long_option(long)
-    calls = [leg for leg in legs if leg.type == OptionType.CALL]
-    puts = [leg for leg in legs if leg.type == OptionType.PUT]
-    extra_puts = sum(c.quantity for c in calls)
-    extra_calls = sum(p.quantity for p in puts)
-    if extra_puts or extra_calls:
-        raise Exception(
-            "Ratio spreads/complex orders not supported! Try splitting your order into "
-            "smaller components and summing the results."
+    # sort by expiry to cover near-term risk first
+    shorts = sorted(leg for leg in legs if leg.quantity < 0)
+    longs = {
+        leg: leg.quantity for leg in sorted([leg for leg in legs if leg.quantity > 0])
+    }
+    covered: list[Option] = []
+    naked_shorts: list[Option] = []
+
+    # step 1: match spreads
+    for short in shorts:
+        unmatched = abs(short.quantity)
+        # iterate our long inventory to find a cover
+        for long, available in longs.items():
+            if unmatched <= 0:
+                break
+            if available <= 0:
+                continue
+            # constraint: same type, long expiry >= short expiry
+            if long.type == short.type and long.expiration >= short.expiration:
+                paired = min(unmatched, available)
+                covered.append(short.model_copy(update={"quantity": -paired}))
+                covered.append(long.model_copy(update={"quantity": paired}))
+                unmatched -= paired
+                longs[long] -= paired
+
+        # remaining short quantity is naked
+        if unmatched > 0:
+            naked_shorts.append(short.model_copy(update={"quantity": -unmatched}))
+
+    # step 2: match strangles
+    strangles: list[tuple[Option, Option]] = []
+    naked_calls = deque(leg for leg in naked_shorts if leg.type == OptionType.CALL)
+    naked_puts = deque(leg for leg in naked_shorts if leg.type == OptionType.PUT)
+
+    while naked_calls and naked_puts:
+        call = naked_calls.popleft()
+        put = naked_puts.popleft()
+        q = min(abs(call.quantity), abs(put.quantity))
+        strangles.append(
+            (
+                call.model_copy(update={"quantity": -q}),
+                put.model_copy(update={"quantity": -q}),
+            )
         )
-    return _calculate_margin_spread(legs)
+        # handle remaining quantity
+        if rem := abs(call.quantity) - q:
+            naked_calls.appendleft(call.model_copy(update={"quantity": -rem}))
+        if rem := abs(put.quantity) - q:
+            naked_puts.appendleft(put.model_copy(update={"quantity": -rem}))
+
+    # all unmatched options at this point go here
+    naked = list(naked_calls)
+    naked.extend(naked_puts)
+    naked.extend(
+        leg.model_copy(update={"quantity": q}) for leg, q in longs.items() if q
+    )
+
+    # step 3: calculate totals
+    total = MarginRequirements(cash_requirement=ZERO, margin_requirement=ZERO)
+    if covered:
+        total += _calculate_margin_spread(covered)
+    for call, put in strangles:
+        total += _calculate_margin_short_strangle([call, put], underlying)
+    for leg in naked:
+        if leg.quantity > 0:
+            total += _calculate_margin_long_option(leg)
+        else:
+            total += _calculate_margin_short_option(leg, underlying)
+
+    return total
 
 
 def _calculate_margin_long_option(option: Option) -> MarginRequirements:

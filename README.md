@@ -1,11 +1,8 @@
 # margin-estimator
-Calculate estimated margin requirements for equities, options, futures, and futures options. Based on CBOE and CME margining.
+Calculate estimated margin requirements for equities options, based on CBOE margining.
 
 > [!NOTE]
-> Not all features are available yet, pending further development.
-> Currently, equity/ETF/index options are supported, for any trade
-> type other than ratio spreads, box spreads, and jaze lizards.
-> Contributions welcome!
+> Box spreads and some complex multi-legged positions may be calculated too conservatively.
 
 ## Installation
 
@@ -15,7 +12,7 @@ $ pip install margin_estimator
 
 ## Usage
 
-Simply pass a list of legs to the `calculate_margin` function along with an `Underlying` object containing information on the underlying, and you'll get back margin requirement estimates for cash and margin accounts!
+Simply pass an arbitrary list of legs to the `calculate_margin` function along with an `Underlying` object containing information on the underlying, and you'll get back margin requirement estimates for cash and margin accounts!
 
 ```python
 from datetime import date
@@ -116,4 +113,4 @@ print(margin)
 >>> cash_requirement=Decimal('7555.00') margin_requirement=Decimal('3661.00')
 ```
 
-Please note that all numbers are baseline estimates based on CBOE/CME guidelines and individual broker margins will likely vary significantly.
+Please note that all numbers are baseline minimums from CBOE guidelines and individual broker margins will likely vary significantly.

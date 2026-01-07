@@ -1,3 +1,4 @@
+import random
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -11,7 +12,7 @@ from margin_estimator import (
 
 
 def test_long_option():
-    underlying = Underlying(price=128.5)
+    underlying = Underlying(price=Decimal("128.5"))
     call = Option(
         expiration=date.today(), price=5, quantity=1, strike=125, type=OptionType.CALL
     )
@@ -20,10 +21,10 @@ def test_long_option():
 
 
 def test_long_option_index():
-    underlying = Underlying(price=433.35, etf_type=ETFType.BROAD)
+    underlying = Underlying(price=Decimal("433.35"), etf_type=ETFType.BROAD)
     put = Option(
         expiration=date.today(),
-        price=5.5,
+        price=Decimal("5.5"),
         quantity=1,
         strike=430,
         type=OptionType.PUT,
@@ -50,7 +51,7 @@ def test_long_option_20_months():
     underlying = Underlying(price=1290)
     call = Option(
         expiration=date.today() + timedelta(days=20 * 30),
-        price=16.8,
+        price=Decimal("16.8"),
         quantity=1,
         strike=1325,
         type=OptionType.CALL,
@@ -71,9 +72,13 @@ def test_short_put():
 
 
 def test_short_put_itm():
-    underlying = Underlying(price=19.5)
+    underlying = Underlying(price=Decimal("19.5"))
     put = Option(
-        expiration=date.today(), price=1.5, quantity=-1, strike=20, type=OptionType.PUT
+        expiration=date.today(),
+        price=Decimal("1.5"),
+        quantity=-1,
+        strike=20,
+        type=OptionType.PUT,
     )
     margin = calculate_margin([put], underlying)
     assert margin.cash_requirement == Decimal(1850)
@@ -91,10 +96,10 @@ def test_short_leveraged():
 
 
 def test_short_leveraged_itm():
-    underlying = Underlying(price=390.7, leverage_factor=3)
+    underlying = Underlying(price=Decimal("390.7"), leverage_factor=3)
     put = Option(
         expiration=date.today(),
-        price=15.5,
+        price=Decimal("15.5"),
         quantity=-1,
         strike=400,
         type=OptionType.PUT,
@@ -105,10 +110,10 @@ def test_short_leveraged_itm():
 
 
 def test_short_broad():
-    underlying = Underlying(price=445.35, etf_type=ETFType.BROAD)
+    underlying = Underlying(price=Decimal("445.35"), etf_type=ETFType.BROAD)
     put = Option(
         expiration=date.today(),
-        price=0.1,
+        price=Decimal("0.1"),
         quantity=-1,
         strike=410,
         type=OptionType.PUT,
@@ -119,10 +124,10 @@ def test_short_broad():
 
 
 def test_short_broad_2():
-    underlying = Underlying(price=433.35, etf_type=ETFType.BROAD)
+    underlying = Underlying(price=Decimal("433.35"), etf_type=ETFType.BROAD)
     put = Option(
         expiration=date.today(),
-        price=7.8,
+        price=Decimal("7.8"),
         quantity=-1,
         strike=430,
         type=OptionType.PUT,
@@ -133,10 +138,10 @@ def test_short_broad_2():
 
 
 def test_short_broad_itm():
-    underlying = Underlying(price=43.34, etf_type=ETFType.BROAD)
+    underlying = Underlying(price=Decimal("43.34"), etf_type=ETFType.BROAD)
     put = Option(
         expiration=date.today() + timedelta(days=24 * 30),
-        price=2.85,
+        price=Decimal("2.85"),
         quantity=-1,
         strike=45,
         type=OptionType.PUT,
@@ -147,7 +152,9 @@ def test_short_broad_itm():
 
 
 def test_short_leveraged_etf_broad():
-    underlying = Underlying(price=460, etf_type=ETFType.BROAD, leverage_factor=1.5)
+    underlying = Underlying(
+        price=460, etf_type=ETFType.BROAD, leverage_factor=Decimal("1.5")
+    )
     put = Option(
         expiration=date.today(),
         price=4,
@@ -161,10 +168,10 @@ def test_short_leveraged_etf_broad():
 
 
 def test_short_call_itm():
-    underlying = Underlying(price=128.5)
+    underlying = Underlying(price=Decimal("128.5"))
     call = Option(
         expiration=date.today(),
-        price=8.4,
+        price=Decimal("8.4"),
         quantity=-1,
         strike=120,
         type=OptionType.CALL,
@@ -175,10 +182,10 @@ def test_short_call_itm():
 
 
 def test_short_call():
-    underlying = Underlying(price=26.38)
+    underlying = Underlying(price=Decimal("26.38"))
     call = Option(
         expiration=date.today(),
-        price=0.05,
+        price=Decimal("0.05"),
         quantity=-1,
         strike=30,
         type=OptionType.CALL,
@@ -189,10 +196,12 @@ def test_short_call():
 
 
 def test_short_call_leveraged_itm():
-    underlying = Underlying(price=815.5, leverage_factor=2, etf_type=ETFType.NARROW)
+    underlying = Underlying(
+        price=Decimal("815.5"), leverage_factor=2, etf_type=ETFType.NARROW
+    )
     call = Option(
         expiration=date.today(),
-        price=10.1,
+        price=Decimal("10.1"),
         quantity=-1,
         strike=810,
         type=OptionType.CALL,
@@ -203,7 +212,7 @@ def test_short_call_leveraged_itm():
 
 
 def test_short_call_leveraged():
-    underlying = Underlying(price=1050.3, leverage_factor=1.5)
+    underlying = Underlying(price=Decimal("1050.3"), leverage_factor=Decimal("1.5"))
     call = Option(
         expiration=date.today(),
         price=2,
@@ -217,10 +226,10 @@ def test_short_call_leveraged():
 
 
 def test_short_call_broad_itm():
-    underlying = Underlying(price=433.35, etf_type=ETFType.BROAD)
+    underlying = Underlying(price=Decimal("433.35"), etf_type=ETFType.BROAD)
     call = Option(
         expiration=date.today(),
-        price=8.7,
+        price=Decimal("8.7"),
         quantity=-1,
         strike=430,
         type=OptionType.CALL,
@@ -231,10 +240,10 @@ def test_short_call_broad_itm():
 
 
 def test_short_call_broad():
-    underlying = Underlying(price=43.34, etf_type=ETFType.BROAD)
+    underlying = Underlying(price=Decimal("43.34"), etf_type=ETFType.BROAD)
     call = Option(
         expiration=date.today(),
-        price=1.35,
+        price=Decimal("1.35"),
         quantity=-1,
         strike=45,
         type=OptionType.CALL,
@@ -245,10 +254,10 @@ def test_short_call_broad():
 
 
 def test_short_call_etf_broad():
-    underlying = Underlying(price=378.5, etf_type=ETFType.BROAD)
+    underlying = Underlying(price=Decimal("378.5"), etf_type=ETFType.BROAD)
     call = Option(
         expiration=date.today(),
-        price=12.85,
+        price=Decimal("12.85"),
         quantity=-1,
         strike=370,
         type=OptionType.CALL,
@@ -259,7 +268,9 @@ def test_short_call_etf_broad():
 
 
 def test_short_call_broad_leveraged():
-    underlying = Underlying(price=410, etf_type=ETFType.BROAD, leverage_factor=1.5)
+    underlying = Underlying(
+        price=410, etf_type=ETFType.BROAD, leverage_factor=Decimal("1.5")
+    )
     call = Option(
         expiration=date.today(),
         price=3,
@@ -283,7 +294,7 @@ def test_put_debit_spread():
     )
     short = Option(
         expiration=date.today(),
-        price=0.95,
+        price=Decimal("0.95"),
         quantity=-1,
         strike=240,
         type=OptionType.PUT,
@@ -294,17 +305,17 @@ def test_put_debit_spread():
 
 
 def test_put_credit_spread():
-    underlying = Underlying(price=433.35, etf_type=ETFType.BROAD)
+    underlying = Underlying(price=Decimal("433.35"), etf_type=ETFType.BROAD)
     long = Option(
         expiration=date.today(),
-        price=6.4,
+        price=Decimal("6.4"),
         quantity=1,
         strike=425,
         type=OptionType.PUT,
     )
     short = Option(
         expiration=date.today(),
-        price=7.8,
+        price=Decimal("7.8"),
         quantity=-1,
         strike=430,
         type=OptionType.PUT,
@@ -315,17 +326,17 @@ def test_put_credit_spread():
 
 
 def test_put_credit_spread_itm():
-    underlying = Underlying(price=43.34, etf_type=ETFType.NARROW)
+    underlying = Underlying(price=Decimal("43.34"), etf_type=ETFType.NARROW)
     long = Option(
         expiration=date.today(),
         price=2,
         quantity=1,
-        strike=42.5,
+        strike=Decimal("42.5"),
         type=OptionType.PUT,
     )
     short = Option(
         expiration=date.today(),
-        price=2.9,
+        price=Decimal("2.9"),
         quantity=-1,
         strike=45,
         type=OptionType.PUT,
@@ -336,17 +347,17 @@ def test_put_credit_spread_itm():
 
 
 def test_call_credit_spread_itm():
-    underlying = Underlying(price=128.5)
+    underlying = Underlying(price=Decimal("128.5"))
     long = Option(
         expiration=date.today(),
-        price=3.8,
+        price=Decimal("3.8"),
         quantity=1,
         strike=125,
         type=OptionType.CALL,
     )
     short = Option(
         expiration=date.today(),
-        price=8.4,
+        price=Decimal("8.4"),
         quantity=-1,
         strike=120,
         type=OptionType.CALL,
@@ -356,7 +367,7 @@ def test_call_credit_spread_itm():
     assert margin.margin_requirement == Decimal(40)
 
 
-def test_call_calendar_spread():
+def test_call_credit_calendar_spread():
     underlying = Underlying(price=75)
     long = Option(
         expiration=date.today(),
@@ -376,19 +387,44 @@ def test_call_calendar_spread():
     assert margin.cash_requirement == Decimal(7200)
     assert margin.margin_requirement == Decimal(2800)
 
+    assert margin == calculate_margin([long], underlying) + calculate_margin(
+        [short], underlying
+    )
+
+
+def test_call_debit_calendar_spread():
+    underlying = Underlying(price=75)
+    long = Option(
+        expiration=date.today() + timedelta(days=1),
+        price=6,
+        quantity=1,
+        strike=70,
+        type=OptionType.CALL,
+    )
+    short = Option(
+        expiration=date.today(),
+        price=5,
+        quantity=-1,
+        strike=70,
+        type=OptionType.CALL,
+    )
+    margin = calculate_margin([long, short], underlying)
+    assert margin.cash_requirement == Decimal(100)
+    assert margin.margin_requirement == Decimal(100)
+
 
 def test_call_calendar_spread_broad():
-    underlying = Underlying(price=433.35, etf_type=ETFType.BROAD)
+    underlying = Underlying(price=Decimal("433.35"), etf_type=ETFType.BROAD)
     long = Option(
         expiration=date.today(),
-        price=13.1,
+        price=Decimal("13.1"),
         quantity=1,
         strike=425,
         type=OptionType.CALL,
     )
     short = Option(
         expiration=date.today() + timedelta(days=30),
-        price=12.2,
+        price=Decimal("12.2"),
         quantity=-1,
         strike=430,
         type=OptionType.CALL,
@@ -399,7 +435,7 @@ def test_call_calendar_spread_broad():
 
 
 def test_straddle():
-    underlying = Underlying(price=92.63)
+    underlying = Underlying(price=Decimal("92.63"))
     call = Option(
         expiration=date.today(),
         price=7,
@@ -409,7 +445,7 @@ def test_straddle():
     )
     put = Option(
         expiration=date.today(),
-        price=3.7,
+        price=Decimal("3.7"),
         quantity=-1,
         strike=90,
         type=OptionType.PUT,
@@ -420,17 +456,17 @@ def test_straddle():
 
 
 def test_straddle_broad():
-    underlying = Underlying(price=433.35, etf_type=ETFType.BROAD)
+    underlying = Underlying(price=Decimal("433.35"), etf_type=ETFType.BROAD)
     call = Option(
         expiration=date.today(),
-        price=5.5,
+        price=Decimal("5.5"),
         quantity=-1,
         strike=435,
         type=OptionType.CALL,
     )
     put = Option(
         expiration=date.today(),
-        price=7.2,
+        price=Decimal("7.2"),
         quantity=-1,
         strike=435,
         type=OptionType.PUT,
@@ -441,17 +477,17 @@ def test_straddle_broad():
 
 
 def test_straddle_broad_2():
-    underlying = Underlying(price=43.34, etf_type=ETFType.BROAD)
+    underlying = Underlying(price=Decimal("43.34"), etf_type=ETFType.BROAD)
     call = Option(
         expiration=date.today(),
-        price=1.35,
+        price=Decimal("1.35"),
         quantity=-1,
         strike=45,
         type=OptionType.CALL,
     )
     put = Option(
         expiration=date.today(),
-        price=2.85,
+        price=Decimal("2.85"),
         quantity=-1,
         strike=45,
         type=OptionType.PUT,
@@ -465,21 +501,21 @@ def test_long_put_butterfly():
     underlying = Underlying(price=550)
     below = Option(
         expiration=date.today(),
-        price=5.6,
+        price=Decimal("5.6"),
         quantity=1,
         strike=540,
         type=OptionType.PUT,
     )
     short = Option(
         expiration=date.today(),
-        price=7.2,
+        price=Decimal("7.2"),
         quantity=-2,
         strike=550,
         type=OptionType.PUT,
     )
     above = Option(
         expiration=date.today(),
-        price=9.8,
+        price=Decimal("9.8"),
         quantity=1,
         strike=555,
         type=OptionType.PUT,
@@ -493,14 +529,14 @@ def test_long_call_butterfly():
     underlying = Underlying(price=550)
     below = Option(
         expiration=date.today(),
-        price=12.4,
+        price=Decimal("12.4"),
         quantity=1,
         strike=545,
         type=OptionType.CALL,
     )
     short = Option(
         expiration=date.today(),
-        price=8.8,
+        price=Decimal("8.8"),
         quantity=-2,
         strike=550,
         type=OptionType.CALL,
@@ -521,28 +557,28 @@ def test_long_put_condor():
     underlying = Underlying(price=1160)
     long_below = Option(
         expiration=date.today(),
-        price=47.1,
+        price=Decimal("47.1"),
         quantity=1,
         strike=1050,
         type=OptionType.PUT,
     )
     short_below = Option(
         expiration=date.today(),
-        price=55.7,
+        price=Decimal("55.7"),
         quantity=-1,
         strike=1075,
         type=OptionType.PUT,
     )
     short_above = Option(
         expiration=date.today(),
-        price=66.3,
+        price=Decimal("66.3"),
         quantity=-1,
         strike=1100,
         type=OptionType.PUT,
     )
     long_above = Option(
         expiration=date.today(),
-        price=85.4,
+        price=Decimal("85.4"),
         quantity=1,
         strike=1125,
         type=OptionType.PUT,
@@ -555,33 +591,33 @@ def test_long_put_condor():
 
 
 def test_long_call_condor():
-    underlying = Underlying(price=26.75)
+    underlying = Underlying(price=Decimal("26.75"))
     long_below = Option(
         expiration=date.today(),
-        price=0.45,
+        price=Decimal("0.45"),
         quantity=1,
-        strike=22.5,
+        strike=Decimal("22.5"),
         type=OptionType.CALL,
     )
     short_below = Option(
         expiration=date.today(),
-        price=0.75,
+        price=Decimal("0.75"),
         quantity=-1,
         strike=25,
         type=OptionType.CALL,
     )
     short_above = Option(
         expiration=date.today(),
-        price=2.75,
+        price=Decimal("2.75"),
         quantity=-1,
         strike=30,
         type=OptionType.CALL,
     )
     long_above = Option(
         expiration=date.today(),
-        price=4.3,
+        price=Decimal("4.3"),
         quantity=1,
-        strike=32.5,
+        strike=Decimal("32.5"),
         type=OptionType.CALL,
     )
     margin = calculate_margin(
@@ -592,17 +628,17 @@ def test_long_call_condor():
 
 
 def test_iron_butterfly():
-    underlying = Underlying(price=26.75)
+    underlying = Underlying(price=Decimal("26.75"))
     long_below = Option(
         expiration=date.today(),
-        price=0.1,
+        price=Decimal("0.1"),
         quantity=1,
         strike=16,
         type=OptionType.PUT,
     )
     short_below = Option(
         expiration=date.today(),
-        price=0.2,
+        price=Decimal("0.2"),
         quantity=-1,
         strike=20,
         type=OptionType.PUT,
@@ -639,21 +675,21 @@ def test_iron_condor():
     )
     short_below = Option(
         expiration=date.today(),
-        price=35.1,
+        price=Decimal("35.1"),
         quantity=-1,
         strike=1025,
         type=OptionType.PUT,
     )
     short_above = Option(
         expiration=date.today(),
-        price=9.4,
+        price=Decimal("9.4"),
         quantity=-1,
         strike=1150,
         type=OptionType.CALL,
     )
     long_above = Option(
         expiration=date.today(),
-        price=6.3,
+        price=Decimal("6.3"),
         quantity=1,
         strike=1175,
         type=OptionType.CALL,
@@ -663,3 +699,218 @@ def test_iron_condor():
     )
     assert margin.cash_requirement == Decimal(1880)
     assert margin.margin_requirement == Decimal(1880)
+
+
+def test_iron_condor_and_calendar_and_strangle():
+    underlying = Underlying(price=1060)
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    long_below = Option(
+        expiration=today,
+        price=32,
+        quantity=1,
+        strike=1000,
+        type=OptionType.PUT,
+    )
+    short_below = Option(
+        expiration=today,
+        price=Decimal("35.1"),
+        quantity=-1,
+        strike=1025,
+        type=OptionType.PUT,
+    )
+    short_above = Option(
+        expiration=today,
+        price=Decimal("9.4"),
+        quantity=-1,
+        strike=1150,
+        type=OptionType.CALL,
+    )
+    long_above = Option(
+        expiration=today,
+        price=Decimal("6.3"),
+        quantity=1,
+        strike=1175,
+        type=OptionType.CALL,
+    )
+    strangle_put = Option(
+        expiration=tomorrow,
+        price=Decimal("37.5"),
+        quantity=-1,
+        strike=1025,
+        type=OptionType.PUT,
+    )
+    strangle_call = Option(
+        expiration=tomorrow,
+        price=Decimal("6.5"),
+        quantity=-1,
+        strike=1175,
+        type=OptionType.CALL,
+    )
+    calendar_short = Option(
+        expiration=tomorrow,
+        price=Decimal("25.3"),
+        quantity=-1,
+        strike=1150,
+        type=OptionType.PUT,
+    )
+    calendar_long = Option(
+        expiration=today,
+        price=Decimal("28.3"),
+        quantity=1,
+        strike=1150,
+        type=OptionType.PUT,
+    )
+    all = [
+        long_below,
+        short_below,
+        long_above,
+        short_above,
+        strangle_call,
+        strangle_put,
+        calendar_long,
+        calendar_short,
+    ]
+    random.shuffle(all)
+    aggregate = calculate_margin(all, underlying)
+    condor = calculate_margin(
+        [long_below, short_below, long_above, short_above], underlying
+    )
+    strangle = calculate_margin([strangle_call, strangle_put], underlying)
+    calendar = calculate_margin([calendar_long, calendar_short], underlying)
+    assert aggregate == condor + strangle + calendar
+
+
+def test_ratio_spread_call():
+    underlying = Underlying(price=100)
+    long = Option(
+        expiration=date.today(),
+        price=5,
+        quantity=1,
+        strike=110,
+        type=OptionType.CALL,
+    )
+    short = Option(
+        expiration=date.today(),
+        price=10,
+        quantity=-2,
+        strike=105,
+        type=OptionType.CALL,
+    )
+    margin = calculate_margin([long, short], underlying)
+    single = short.model_copy(update={"quantity": -1})
+    spread_margin = calculate_margin([long, single], underlying)
+    naked_margin = calculate_margin([single], underlying)
+    assert margin == spread_margin + naked_margin
+
+
+def test_diagonal_spread():
+    underlying = Underlying(price=50)
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    long = Option(
+        expiration=tomorrow,
+        price=2,
+        quantity=1,
+        strike=55,
+        type=OptionType.CALL,
+    )
+    short = Option(
+        expiration=today,
+        price=4,
+        quantity=-1,
+        strike=52,
+        type=OptionType.CALL,
+    )
+    margin = calculate_margin([long, short], underlying)
+    # $200 credit from $3 width = $1
+    assert margin.cash_requirement == Decimal(100)
+    assert margin.margin_requirement == Decimal(100)
+
+
+def test_multiple_strangles_with_remainders():
+    underlying = Underlying(price=100)
+    calls = Option(
+        expiration=date.today(),
+        price=3,
+        quantity=-5,
+        strike=110,
+        type=OptionType.CALL,
+    )
+    puts = Option(
+        expiration=date.today(),
+        price=4,
+        quantity=-3,
+        strike=90,
+        type=OptionType.PUT,
+    )
+    margin = calculate_margin([calls, puts], underlying)
+    strangles = calculate_margin(
+        [
+            calls.model_copy(update={"quantity": -3}),
+            puts,
+        ],
+        underlying,
+    )
+    naked_calls = calculate_margin(
+        [calls.model_copy(update={"quantity": -2})], underlying
+    )
+    assert margin == strangles + naked_calls
+
+
+def test_complex_multi_strategy_position():
+    underlying = Underlying(price=500)
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    # vertical call spread $3 credit x2
+    vertical_long = Option(
+        expiration=today, price=10, quantity=2, strike=510, type=OptionType.CALL
+    )
+    vertical_short = Option(
+        expiration=today, price=13, quantity=-2, strike=505, type=OptionType.CALL
+    )
+    # calendar put spread $5 debit
+    calendar_long = Option(
+        expiration=tomorrow, price=20, quantity=1, strike=495, type=OptionType.PUT
+    )
+    calendar_short = Option(
+        expiration=today, price=15, quantity=-1, strike=495, type=OptionType.PUT
+    )
+    # naked strangle $11 credit x3 + naked call $5 credit
+    strangle_call = Option(
+        expiration=today, price=5, quantity=-3, strike=520, type=OptionType.CALL
+    )
+    strangle_put = Option(
+        expiration=today, price=6, quantity=-2, strike=480, type=OptionType.PUT
+    )
+    # extra long that will match extra short from strangle
+    orphan_long = Option(
+        expiration=today, price=2, quantity=1, strike=530, type=OptionType.CALL
+    )
+    all = [
+        vertical_long,
+        vertical_short,
+        calendar_long,
+        calendar_short,
+        strangle_call,
+        strangle_put,
+        orphan_long,
+    ]
+    random.shuffle(all)
+    total = calculate_margin(all, underlying)
+    mismatched_spread = calculate_margin(
+        [strangle_put.model_copy(update={"quantity": -1}), calendar_long], underlying
+    )
+    vertical = calculate_margin([vertical_long, vertical_short], underlying)
+    orphan_spread = calculate_margin(
+        [strangle_call.model_copy(update={"quantity": -1}), orphan_long], underlying
+    )
+    strangle = calculate_margin(
+        [
+            strangle_call.model_copy(update={"quantity": -2}),
+            strangle_put.model_copy(update={"quantity": -1}),
+            calendar_short,
+        ],
+        underlying,
+    )
+    assert total == vertical + orphan_spread + strangle + mismatched_spread
