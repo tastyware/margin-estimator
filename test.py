@@ -9,6 +9,8 @@ from margin_estimator import (
     Underlying,
     calculate_margin,
 )
+from margin_estimator.margin import ZERO
+from margin_estimator.models import MarginRequirements
 
 
 def test_long_option():
@@ -914,3 +916,32 @@ def test_complex_multi_strategy_position():
         underlying,
     )
     assert total == vertical + orphan_spread + strangle + mismatched_spread
+
+
+def test_cancel_opposing_positions():
+    underlying = Underlying(price=500)
+    long = Option(
+        expiration=date.today(), price=10, quantity=1, strike=510, type=OptionType.CALL
+    )
+    short = Option(
+        expiration=date.today(), price=10, quantity=-1, strike=510, type=OptionType.CALL
+    )
+    nothing = MarginRequirements(cash_requirement=ZERO, margin_requirement=ZERO)
+    assert calculate_margin([long, short], underlying) == nothing
+    assert calculate_margin([long, short, short, long], underlying) == nothing
+    assert (
+        calculate_margin([short, long, long, short, long, short], underlying) == nothing
+    )
+
+
+def test_cancel_some_opposing_positions():
+    underlying = Underlying(price=500)
+    long = Option(
+        expiration=date.today(), price=10, quantity=1, strike=510, type=OptionType.CALL
+    )
+    short = Option(
+        expiration=date.today(), price=10, quantity=-2, strike=510, type=OptionType.CALL
+    )
+    assert calculate_margin([long, short], underlying) == calculate_margin(
+        [short.model_copy(update={"quantity": -1})], underlying
+    )

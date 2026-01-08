@@ -14,11 +14,21 @@ ZERO = Decimal(0)
 
 
 def calculate_margin(legs: list[Option], underlying: Underlying) -> MarginRequirements:
+    # step 0: cancel out opposing positions
+    netted: dict[tuple[date, Decimal, str], Option] = {}
+    for leg in legs:
+        key = (leg.expiration, leg.strike, leg.type.value)
+        if key in netted:
+            netted[key] = netted[key].model_copy(
+                update={"quantity": netted[key].quantity + leg.quantity}
+            )
+        else:
+            netted[key] = leg
+    legs = [leg for leg in netted.values() if leg.quantity != 0]
+
     # sort by expiry to cover near-term risk first
     shorts = sorted(leg for leg in legs if leg.quantity < 0)
-    longs = {
-        leg: leg.quantity for leg in sorted([leg for leg in legs if leg.quantity > 0])
-    }
+    longs = {leg: leg.quantity for leg in sorted(l for l in legs if l.quantity > 0)}
     covered: list[Option] = []
     naked_shorts: list[Option] = []
 
