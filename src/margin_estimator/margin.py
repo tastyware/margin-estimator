@@ -3,20 +3,29 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from .models import (
+    ZERO,
     ETFType,
     MarginRequirements,
     Option,
     OptionType,
+    Shares,
     Underlying,
 )
 
-ZERO = Decimal(0)
 
-
-def calculate_margin(legs: list[Option], underlying: Underlying) -> MarginRequirements:
+def calculate_margin(
+    legs: list[Option | Shares], underlying: Underlying
+) -> MarginRequirements:
+    # separate out shares from options
+    options = [leg for leg in legs if isinstance(leg, Option)]
+    stocks = [leg for leg in legs if isinstance(leg, Shares)]
+    stock: Shares | None = None
+    if stocks and (stock_quantity := sum(leg.quantity for leg in stocks)):
+        avg_price = sum(leg.quantity * leg.price for leg in stocks) / stock_quantity
+        stock = Shares(price=Decimal(avg_price), quantity=stock_quantity)
     # step 0: cancel out opposing positions
     netted: dict[tuple[date, Decimal, str], Option] = {}
-    for leg in legs:
+    for leg in options:
         key = (leg.expiration, leg.strike, leg.type.value)
         if key in netted:
             netted[key] = netted[key].model_copy(
@@ -24,15 +33,31 @@ def calculate_margin(legs: list[Option], underlying: Underlying) -> MarginRequir
             )
         else:
             netted[key] = leg
-    legs = [leg for leg in netted.values() if leg.quantity != 0]
+    options = [leg for leg in netted.values() if leg.quantity != 0]
 
     # sort by expiry to cover near-term risk first
-    shorts = sorted(leg for leg in legs if leg.quantity < 0)
-    longs = {leg: leg.quantity for leg in sorted(l for l in legs if l.quantity > 0)}
+    shorts = sorted(o for o in options if o.quantity < 0)
+    longs = {leg: leg.quantity for leg in sorted(o for o in options if o.quantity > 0)}
     covered: list[Option] = []
     naked_shorts: list[Option] = []
 
-    # step 1: match spreads
+    # step 1: match covered calls/puts with stock position
+    if stock:
+        remaining = abs(stock.quantity)
+        target = OptionType.CALL if stock.quantity > 0 else OptionType.PUT
+        new_shorts = []
+        for short in shorts:
+            if short.type != target or remaining < 100:
+                new_shorts.append(short)
+                continue
+            paired = min(abs(short.quantity), remaining // 100)
+            remaining -= paired * 100
+            leftover = abs(short.quantity) - paired
+            if leftover:
+                new_shorts.append(short.model_copy(update={"quantity": -leftover}))
+        shorts = new_shorts
+
+    # step 2: match spreads
     for short in shorts:
         unmatched = abs(short.quantity)
         # iterate our long inventory to find a cover
@@ -53,7 +78,7 @@ def calculate_margin(legs: list[Option], underlying: Underlying) -> MarginRequir
         if unmatched > 0:
             naked_shorts.append(short.model_copy(update={"quantity": -unmatched}))
 
-    # step 2: match strangles
+    # step 3: match strangles
     strangles: list[tuple[Option, Option]] = []
     naked_calls = deque(leg for leg in naked_shorts if leg.type == OptionType.CALL)
     naked_puts = deque(leg for leg in naked_shorts if leg.type == OptionType.PUT)
@@ -81,10 +106,12 @@ def calculate_margin(legs: list[Option], underlying: Underlying) -> MarginRequir
         leg.model_copy(update={"quantity": q}) for leg, q in longs.items() if q
     )
 
-    # step 3: calculate totals
-    total = MarginRequirements(cash_requirement=ZERO, margin_requirement=ZERO)
+    # step 4: calculate totals
+    total = MarginRequirements()
     if covered:
         total += _calculate_margin_spread(covered)
+    if stock:
+        total += _calculate_margin_shares(stock)
     for call, put in strangles:
         total += _calculate_margin_short_strangle([call, put], underlying)
     for leg in naked:
@@ -268,3 +295,18 @@ def _calculate_margin_spread(legs: list[Option]) -> MarginRequirements:
         # maximum potential loss
         margin_requirement=margin_requirement,
     )
+
+
+def _calculate_margin_shares(shares: Shares) -> MarginRequirements:
+    """
+    Calculate margin for a stock position.
+    Source: CBOE Margin Manual.
+    """
+    value = shares.price * abs(shares.quantity)
+    half = round(shares.price / 2, 2) * abs(shares.quantity)
+    if shares.quantity > 0:
+        # long: pay 100% in cash, 50% requirement in margin account
+        return MarginRequirements(cash_requirement=value, margin_requirement=half)
+    # short: not permitted in cash account.
+    # margin: short sale proceeds plus 50% requirement = 150%
+    return MarginRequirements(margin_requirement=value + half)

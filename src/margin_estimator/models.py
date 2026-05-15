@@ -5,6 +5,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict
 
+ZERO = Decimal(0)
+
 
 class ETFType(StrEnum):
     BROAD = "broad-based"
@@ -65,8 +67,8 @@ class Option(BaseModel):
 
 
 class MarginRequirements(BaseModel):
-    cash_requirement: Decimal
-    margin_requirement: Decimal
+    cash_requirement: Decimal = ZERO
+    margin_requirement: Decimal = ZERO
 
     def __add__(self, other: "MarginRequirements"):
         return MarginRequirements(
@@ -85,3 +87,10 @@ class Underlying(BaseModel):
     etf_type: ETFType | None = None
     leverage_factor: Decimal = Decimal(1)
     price: Decimal
+
+
+class Shares(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    price: Decimal
+    quantity: int

@@ -9,8 +9,7 @@ from margin_estimator import (
     Underlying,
     calculate_margin,
 )
-from margin_estimator.margin import ZERO
-from margin_estimator.models import MarginRequirements
+from margin_estimator.models import MarginRequirements, Shares
 
 
 def test_long_option():
@@ -926,7 +925,7 @@ def test_cancel_opposing_positions():
     short = Option(
         expiration=date.today(), price=10, quantity=-1, strike=510, type=OptionType.CALL
     )
-    nothing = MarginRequirements(cash_requirement=ZERO, margin_requirement=ZERO)
+    nothing = MarginRequirements()
     assert calculate_margin([long, short], underlying) == nothing
     assert calculate_margin([long, short, short, long], underlying) == nothing
     assert (
@@ -944,4 +943,107 @@ def test_cancel_some_opposing_positions():
     )
     assert calculate_margin([long, short], underlying) == calculate_margin(
         [short.model_copy(update={"quantity": -1})], underlying
+    )
+
+
+def test_covered_call():
+    underlying = Underlying(price=85)
+    short = Option(
+        expiration=date.today(),
+        price=7,
+        quantity=-1,
+        strike=90,
+        type=OptionType.CALL,
+    )
+    shares = Shares(price=Decimal("92.38"), quantity=100)
+    margin = calculate_margin([short, shares], underlying)
+    assert margin.cash_requirement == 9238 and margin.margin_requirement == 4619
+    assert margin == calculate_margin([shares], underlying)
+
+
+def test_covered_call_itm():
+    underlying = Underlying(price=95)
+    short = Option(
+        expiration=date.today(),
+        price=7,
+        quantity=-1,
+        strike=90,
+        type=OptionType.CALL,
+    )
+    shares = Shares(price=Decimal("92.38"), quantity=100)
+    margin = calculate_margin([short, shares], underlying)
+    assert margin.cash_requirement == 9238 and margin.margin_requirement == 4619
+
+
+def test_shares():
+    underlying = Underlying(price=50)
+    shares = Shares(price=Decimal("47.38"), quantity=100)
+    margin = calculate_margin([shares], underlying)
+    assert margin.cash_requirement == 4738 and margin.margin_requirement == 4738 / 2
+
+
+def test_covered_put():
+    underlying = Underlying(price=253)
+    short = Option(
+        expiration=date.today(),
+        price=3,
+        quantity=-1,
+        strike=250,
+        type=OptionType.PUT,
+    )
+    shares = Shares(price=255, quantity=-100)
+    margin = calculate_margin([short, shares], underlying)
+    assert not margin.cash_requirement and margin.margin_requirement == 38250
+
+
+def test_covered_put_itm():
+    underlying = Underlying(price=247)
+    short = Option(
+        expiration=date.today(),
+        price=3,
+        quantity=-1,
+        strike=250,
+        type=OptionType.PUT,
+    )
+    shares = Shares(price=255, quantity=-100)
+    margin = calculate_margin([short, shares], underlying)
+    assert not margin.cash_requirement and margin.margin_requirement == 38250
+
+
+def test_covered_call_extra_shares():
+    underlying = Underlying(price=85)
+    short = Option(
+        expiration=date.today(), price=7, quantity=-1, strike=90, type=OptionType.CALL
+    )
+    full = calculate_margin(
+        [short, Shares(price=Decimal("92.38"), quantity=200)], underlying
+    )
+    covered = calculate_margin(
+        [short, Shares(price=Decimal("92.38"), quantity=100)], underlying
+    )
+    extra = calculate_margin([Shares(price=Decimal("92.38"), quantity=100)], underlying)
+    assert full == covered + extra
+
+
+def test_uncovered_call():
+    underlying = Underlying(price=85)
+    short = Option(
+        expiration=date.today(), price=7, quantity=-1, strike=90, type=OptionType.CALL
+    )
+    shares = Shares(price=Decimal("92.38"), quantity=95)
+    margin = calculate_margin([short, shares], underlying)
+    assert margin == calculate_margin([short], underlying) + calculate_margin(
+        [shares], underlying
+    )
+
+
+def test_long_shares_dont_cover_short_put():
+    underlying = Underlying(price=85)
+    put = Option(
+        expiration=date.today(), price=2, quantity=-1, strike=80, type=OptionType.PUT
+    )
+    shares = Shares(price=80, quantity=100)
+    margin = calculate_margin([put, shares], underlying)
+    assert margin == calculate_margin([put], underlying) + calculate_margin(
+        [shares], underlying
     )

@@ -21,6 +21,7 @@ from margin_estimator import (
     ETFType,
     Option,
     OptionType,
+    Shares,
     Underlying,
     calculate_margin,
 )
@@ -111,6 +112,28 @@ print(margin)
 
 ```python
 >>> cash_requirement=Decimal('7555.00') margin_requirement=Decimal('3661.00')
+```
+
+You can even add shares of an underlying to calculate requirements for covered legs:
+
+```python
+# a covered SPY call
+underlying = Underlying(price=Decimal("740"))
+expiration = date(2026, 5, 15)
+call = Option(
+    expiration=expiration,
+    price=Decimal("4.45"),
+    quantity=-1,
+    strike=Decimal(780),
+    type=OptionType.CALL,
+)
+shares = Shares(price=Decimal("700.41"), quantity=100)
+margin = calculate_margin([call, shares], underlying)
+print(margin)
+```
+
+```python
+>>> cash_requirement=Decimal('70041.00') margin_requirement=Decimal('35020.00')
 ```
 
 Please note that all numbers are baseline minimums from CBOE guidelines and individual broker margins will likely vary significantly.
