@@ -1,6 +1,7 @@
 from collections import deque
 from datetime import date, timedelta
 from decimal import Decimal
+from typing import Sequence
 
 from .models import (
     ZERO,
@@ -14,8 +15,12 @@ from .models import (
 
 
 def calculate_margin(
-    legs: list[Option | Shares], underlying: Underlying
+    legs: Sequence[Option | Shares], underlying: Underlying
 ) -> MarginRequirements:
+    """
+    Calculate CBOE margin requirements for both cash and margin accounts for the given
+    position as a group.
+    """
     # separate out shares from options
     options = [leg for leg in legs if isinstance(leg, Option)]
     stocks = [leg for leg in legs if isinstance(leg, Shares)]
